@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Martin Command Center</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0a0a10;--surface:#0f0f18;--surface2:#15151f;
+  --border:#1e1e2c;--border2:#28283a;
+  --text:#e8e8f8;--muted:#55556a;--dim:#2a2a3a;
+  --green:#3ecf6e;--blue:#60a5fa;
+}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;}
+.wrapper{height:100vh;width:100vw;padding:16px 20px;display:flex;flex-direction:column;gap:10px;overflow:hidden;}
+.topbar{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.logo-wrap{display:flex;align-items:center;gap:12px;}
+.logo-svg{height:22px;width:auto;}
+.logo-divider{width:1px;height:18px;background:var(--border2);}
+.logo-sub{font-size:10px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.live-pill{font-size:10px;padding:3px 9px;border-radius:4px;border:.5px solid #e8002d44;color:#e8002d99;display:flex;align-items:center;gap:5px;}
+.live-dot{width:5px;height:5px;border-radius:50%;background:#e8002d;animation:blink 1.8s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
+.clock{font-size:18px;color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.05em;}
+.screen{background:var(--surface);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;}
+.screen-head{background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:8px;}
+.brand-filters{display:flex;gap:5px;}
+.brand-btn{font-size:11px;padding:4px 11px;border-radius:4px;border:.5px solid var(--border2);color:var(--muted);cursor:pointer;background:transparent;transition:all .15s;}
+.src-tabs{display:flex;gap:4px;}
+.src-tab{font-size:11px;padding:3px 11px;border-radius:4px;border:.5px solid var(--border2);color:var(--muted);cursor:pointer;background:transparent;transition:all .15s;}
+.src-tab:hover{color:#aaa;}
+.src-tab.active{background:var(--surface);color:var(--text);border-color:var(--border2);}
+.refresh-btn{font-size:11px;padding:3px 9px;border-radius:4px;border:.5px solid var(--border2);color:var(--muted);cursor:pointer;background:transparent;}
+.refresh-btn.spinning{animation:spin .7s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.feed{flex:1;min-height:0;padding:10px 14px;display:flex;flex-direction:column;gap:8px;overflow:hidden;}
+.card{background:var(--surface2);border:.5px solid var(--border);border-radius:8px;padding:11px 14px;border-left:3px solid transparent;flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-between;}
+.card.entering{animation:cardIn .5s cubic-bezier(0.22,1,0.36,1) both;}
+@keyframes cardIn{from{opacity:0;transform:translateY(-16px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+.card-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.card-src{display:flex;align-items:center;gap:6px;}
+.src-icon{width:18px;height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;}
+.brand-tag{font-size:10px;padding:2px 6px;border-radius:3px;font-weight:600;letter-spacing:.05em;}
+.src-handle{font-size:12px;color:var(--muted);}
+.card-time{font-size:11px;color:var(--dim);}
+.card-text{font-size:14px;color:#c8c8e0;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;}
+.card-text .hl{font-weight:600;}
+.card-foot{display:flex;align-items:center;gap:8px;margin-top:6px;flex-shrink:0;}
+.sent-badge{font-size:10px;padding:2px 7px;border-radius:3px;font-weight:500;}
+.sent-badge.positive{background:#0c2818;color:#3ecf6e;}
+.sent-badge.neutral{background:#181828;color:#7070a0;}
+.sent-badge.negative{background:#280c0c;color:#f87171;}
+.card-eng{font-size:11px;color:var(--dim);}
+.card-link{font-size:11px;color:#3a5a88;text-decoration:none;margin-left:auto;}
+.card-link:hover{color:var(--blue);}
+.shimmer-card{background:var(--surface2);border:.5px solid var(--border);border-radius:8px;padding:14px;flex:1;}
+.shimmer{height:9px;background:var(--border);border-radius:3px;animation:shim 1.2s infinite alternate;margin:5px 0;}
+@keyframes shim{from{opacity:.2;}to{opacity:.5;}}
+.error-card{background:#160808;border:.5px solid #3a1010;border-radius:8px;padding:16px;color:#f87171;font-size:13px;line-height:1.8;flex:1;}
+.foot{background:var(--surface2);border-top:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.stats{display:flex;gap:20px;}
+.stat-n{font-size:18px;font-weight:500;color:var(--text);}
+.stat-l{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-top:1px;}
+.sent-bar{display:flex;gap:2px;align-items:center;}
+.seg{height:4px;border-radius:2px;}
+.ticker-wrap{background:#07070d;border-top:1px solid var(--border);padding:6px 0;overflow:hidden;white-space:nowrap;flex-shrink:0;}
+.ticker-inner{display:inline-block;animation:tick 55s linear infinite;font-size:12px;padding-left:100%;}
+@keyframes tick{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+.tick-item{margin-right:56px;color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="topbar">
+    <div class="logo-wrap">
+      <svg class="logo-svg" viewBox="0 0 1427.6 200" xmlns="http://www.w3.org/2000/svg">
+        <polygon fill="#ffffff" points="868 0 858.8 34.3 934.5 34.3 934.5 200 1020.2 200 1020.2 34.3 1095.9 34.3 1086.7 0 868 0"/>
+        <polygon fill="#ffffff" points="154.9 100 98.6 0 0 0 0 200 35.1 200 35.1 62 113.1 200 136 200 214.6 61.4 214.6 200 300.3 200 300.3 0 211.1 0 154.9 100"/>
+        <path fill="#ffffff" d="M422.5,0l-103.4,200h39.4l13.1-25.7h96l13.4,25.7h96.3L473.7,0h-51.1ZM389.4,140l30.3-58.6,30.3,58.6h-60.6Z"/>
+        <path fill="#ffffff" d="M834.5,56.9h0c0-44.6-32.6-56.9-117.1-56.9h-121.1v200h85.7v-78.3h17.7l32.9,78.3h107.4l-45.4-87.7c28-10,40-28,40-55.4h0ZM744.2,64.9c0,16.6-10.6,22.6-26.9,22.6h-35.4v-53.1h35.4c16.3,0,26.9,6,26.9,22.3v8.3Z"/>
+        <rect fill="#ffffff" x="1114.8" width="85.7" height="200"/>
+        <polygon fill="#ffffff" points="1392.5 0 1392.5 78.3 1309.3 0 1219.3 0 1219.3 200 1254.5 200 1254.5 66.3 1393.6 200 1427.6 200 1427.6 0 1392.5 0"/>
+      </svg>
+      <div class="logo-divider"></div>
+      <span class="logo-sub">Command Center</span>
+    </div>
+    <div class="topbar-right">
+      <div class="live-pill"><div class="live-dot"></div>Live</div>
+      <div class="clock" id="clock">--:--:--</div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div class="screen-head">
+      <div class="brand-filters" id="brand-filters">
+        <button class="brand-btn" data-brand="all" onclick="setBrand('all',this)" style="color:#aaa;border-color:#333;background:#1e1e2c;">All</button>
+        <button class="brand-btn" data-brand="Wawa"    onclick="setBrand('Wawa',this)"    style="color:#e8002d;border-color:#e8002d44;">Wawa</button>
+        <button class="brand-btn" data-brand="Stihl"   onclick="setBrand('Stihl',this)"   style="color:#f97316;border-color:#f9731644;">Stihl</button>
+        <button class="brand-btn" data-brand="Geico"   onclick="setBrand('Geico',this)"   style="color:#22c55e;border-color:#22c55e44;">Geico</button>
+        <button class="brand-btn" data-brand="Hershey" onclick="setBrand('Hershey',this)" style="color:#a0522d;border-color:#a0522d44;">Hershey</button>
+        <button class="brand-btn" data-brand="Axe"     onclick="setBrand('Axe',this)"     style="color:#3b82f6;border-color:#3b82f644;">Axe</button>
+      </div>
+      <div class="src-tabs" id="src-tabs">
+        <button class="src-tab active" onclick="setSrc('all',this)">All</button>
+        <button class="src-tab" onclick="setSrc('reddit',this)">Reddit</button>
+        <button class="src-tab" onclick="setSrc('news',this)">News</button>
+      </div>
+      <button class="refresh-btn" id="refresh-btn" onclick="loadAll()">↻ refresh</button>
+    </div>
+    <div class="feed" id="feed"></div>
+    <div class="foot">
+      <div class="stats">
+        <div><div class="stat-n" id="stat-total">—</div><div class="stat-l">Mentions</div></div>
+        <div><div class="stat-n" id="stat-pos" style="color:#3ecf6e">—</div><div class="stat-l">Positive</div></div>
+        <div><div class="stat-n" id="stat-neg" style="color:#f87171">—</div><div class="stat-l">Negative</div></div>
+        <div><div class="stat-n" id="stat-updated" style="font-size:12px;color:var(--muted)">—</div><div class="stat-l">Updated</div></div>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--dim);text-align:right;margin-bottom:4px;">sentiment</div>
+        <div class="sent-bar" id="sent-bar"></div>
+      </div>
+    </div>
+    <div class="ticker-wrap"><div class="ticker-inner" id="ticker">loading...</div></div>
+  </div>
+</div>
+<script>
+const BRANDS={
+  'Wawa':'#e8002d',
+  'Stihl':'#f97316',
+  'Geico':'#22c55e',
+  'Hershey':'#a0522d',
+  'Axe':'#3b82f6',
+};
+
+let allMentions=[],activeBrand='all',activeSrc='all',isLoading=false;
+let displayIndex=0,rotateTimer=null;
+
+function score(text){
+  const t=text.toLowerCase();
+  const pos=['love','great','best','amazing','perfect','good','fresh','favorite','awesome','excellent','free','loyalty','expand','donate','top','win','happy','convenient','clean','friendly','quality','announce','launch','award','opens','recommend','celebrate'];
+  const neg=['bad','broken','slow','wrong','complaint','issue','problem','rude','stale','expensive','unhappy','frustrated','concern','pricey','error','fail','disappoint','discontinue','lawsuit','recall','shut','cancel'];
+  let p=0,n=0;
+  pos.forEach(w=>{if(t.includes(w))p++;});
+  neg.forEach(w=>{if(t.includes(w))n++;});
+  return p>n?'positive':n>p?'negative':'neutral';
+}
+
+function ago(utc){
+  const d=Date.now()/1000-utc;
+  if(d<60)return'just now';
+  if(d<3600)return Math.floor(d/60)+'m ago';
+  if(d<86400)return Math.floor(d/3600)+'h ago';
+  return Math.floor(d/86400)+'d ago';
+}
+
+function hl(text,brand,color){
+  return text.replace(new RegExp('('+brand.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),`<span class="hl" style="color:${color}">$1</span>`);
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function getCardCount(){
+  const feedH=document.getElementById('feed').clientHeight;
+  return Math.max(3,Math.floor(feedH/138));
+}
+
+function getFiltered(){
+  return allMentions.filter(m=>{
+    const b=activeBrand==='all'||m.brand===activeBrand;
+    const s=activeSrc==='all'||m.type===activeSrc;
+    return b&&s;
+  });
+}
+
+function makeCard(m,animate){
+  const div=document.createElement('div');
+  div.className='card'+(animate?' entering':'');
+  div.style.borderLeftColor=m.color;
+  const srcBg=m.type==='reddit'?'#ff4500':'#1a73e8';
+  const srcLetter=m.type==='reddit'?'R':'N';
+  div.innerHTML=`
+    <div>
+      <div class="card-meta">
+        <div class="card-src">
+          <div class="src-icon" style="background:${srcBg}">${srcLetter}</div>
+          <span class="brand-tag" style="background:${m.color}22;color:${m.color}">${m.brand}</span>
+          <span class="src-handle">${esc(m.handle)}</span>
+        </div>
+        <span class="card-time">${m.time}</span>
+      </div>
+      <div class="card-text">${m.text}</div>
+    </div>
+    <div class="card-foot">
+      <span class="sent-badge ${m.sentiment}">${m.sentiment}</span>
+      <span class="card-eng">${m.engagement}</span>
+      ${m.url?`<a class="card-link" href="${esc(m.url)}" target="_blank" rel="noopener">view →</a>`:''}
+    </div>`;
+  return div;
+}
+
+function startRotation(){
+  if(rotateTimer)clearInterval(rotateTimer);
+  rotateTimer=setInterval(()=>{
+    const filtered=getFiltered();
+    if(!filtered.length)return;
+    const feed=document.getElementById('feed');
+    const count=getCardCount();
+    const m=filtered[displayIndex%filtered.length];
+    displayIndex++;
+    const newCard=makeCard(m,true);
+    feed.insertBefore(newCard,feed.firstChild);
+    while(feed.children.length>count)feed.removeChild(feed.lastChild);
+  },4000);
+}
+
+function renderFeed(){
+  const filtered=getFiltered();
+  const feed=document.getElementById('feed');
+  if(!filtered.length){
+    feed.innerHTML='<div style="padding:30px;text-align:center;color:var(--muted);font-size:14px;">No mentions for this filter.</div>';
+    updateStats([]);
+    return;
+  }
+  const count=getCardCount();
+  feed.innerHTML='';
+  filtered.slice(0,count).forEach((m,i)=>{
+    const card=makeCard(m,true);
+    card.style.animationDelay=(i*60)+'ms';
+    feed.appendChild(card);
+  });
+  displayIndex=count;
+  updateStats(filtered);
+  startRotation();
+}
+
+function updateStats(filtered){
+  const t=filtered.length;
+  document.getElementById('stat-total').textContent=t||'—';
+  if(!t){
+    document.getElementById('stat-pos').textContent='—';
+    document.getElementById('stat-neg').textContent='—';
+    document.getElementById('sent-bar').innerHTML='';
+    return;
+  }
+  const pos=filtered.filter(x=>x.sentiment==='positive').length;
+  const neg=filtered.filter(x=>x.sentiment==='negative').length;
+  const neu=filtered.filter(x=>x.sentiment==='neutral').length;
+  document.getElementById('stat-pos').textContent=Math.round(pos/t*100)+'%';
+  document.getElementById('stat-neg').textContent=Math.round(neg/t*100)+'%';
+  const w=110;
+  document.getElementById('sent-bar').innerHTML=`
+    <div class="seg" style="width:${Math.round(pos/t*w)}px;background:#3ecf6e;opacity:.75;"></div>
+    <div class="seg" style="width:${Math.round(neu/t*w)}px;background:var(--muted);opacity:.5;"></div>
+    <div class="seg" style="width:${Math.round(neg/t*w)}px;background:#f87171;opacity:.75;"></div>`;
+}
+
+function updateTicker(){
+  if(!allMentions.length)return;
+  const items=allMentions.slice(0,14);
+  document.getElementById('ticker').innerHTML=items.concat(items).map(m=>{
+    const plain=m.text.replace(/<[^>]+>/g,'');
+    return`<span class="tick-item"><span style="color:${m.color};margin-right:6px;font-size:10px;">${m.brand}</span>${plain.substring(0,90)}${plain.length>90?'...':''}</span>`;
+  }).join('');
+}
+
+async function loadAll(){
+  if(isLoading)return;
+  isLoading=true;
+  if(rotateTimer){clearInterval(rotateTimer);rotateTimer=null;}
+  const btn=document.getElementById('refresh-btn');
+  btn.textContent='↻';btn.classList.add('spinning');
+  const count=getCardCount();
+  document.getElementById('feed').innerHTML=Array(count).fill(0).map(()=>`<div class="shimmer-card"><div class="shimmer" style="width:40%"></div><div class="shimmer" style="width:88%"></div><div class="shimmer" style="width:65%"></div></div>`).join('');
+  try{
+    const r=await fetch('/api/all');
+    const d=await r.json();
+    allMentions=(d.items||[]).map(m=>({
+      ...m,
+      text:hl((m.title+(m.description?' — '+m.description:'')).substring(0,280),m.brand,m.color),
+      time:ago(m.ts),
+      handle:m.source,
+    }));
+  }catch(e){console.warn(e);}
+  if(!allMentions.length){
+    document.getElementById('feed').innerHTML=`<div class="error-card"><strong>No data loaded.</strong><br><br>Check the terminal and click ↻ refresh.</div>`;
+  }else{
+    renderFeed();
+    updateTicker();
+  }
+  document.getElementById('stat-updated').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  btn.textContent='↻ refresh';btn.classList.remove('spinning');
+  isLoading=false;
+}
+
+function setBrand(brand,btn){
+  activeBrand=brand;
+  displayIndex=0;
+  document.querySelectorAll('.brand-btn').forEach(b=>{b.style.background='transparent';b.style.fontWeight='400';});
+  btn.style.background=brand==='all'?'#1e1e2c':(BRANDS[brand]+'22');
+  btn.style.fontWeight='500';
+  renderFeed();
+}
+
+function setSrc(src,btn){
+  activeSrc=src;
+  displayIndex=0;
+  document.querySelectorAll('#src-tabs .src-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderFeed();
+}
+
+setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});},1000);
+document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+loadAll();
+setInterval(loadAll,90000);
+</script>
+</body>
+</html>
