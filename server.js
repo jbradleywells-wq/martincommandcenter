@@ -56,40 +56,41 @@ function score(text) {
 
 async function getReddit(brand) {
   try {
-    const r = await fetch(`https://www.reddit.com/search.json?q=${encodeURIComponent(brand.query)}&sort=relevance&limit=50&t=week&raw_json=1`, {
-      headers: { 'User-Agent': 'Martin-Command-Center/1.0', 'Accept': 'application/json' }
+    const url = `https://www.reddit.com/search.rss?q=${encodeURIComponent(brand.name)}&sort=new&limit=25&t=week`;
+    const r = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; Martin-Command-Center/1.0)',
+        'Accept': 'application/rss+xml, text/xml'
+      }
     });
-    if (!r.ok) throw new Error('Reddit ' + r.status);
-    const data = await r.json();
-    const seen = new Set();
-    return (data.data?.children || []).filter(c => {
-      const p = c.data;
-      if (seen.has(p.id)) return false;
-      seen.add(p.id);
-      const sub = (p.subreddit || '').toLowerCase();
-      const title = (p.title || '').toLowerCase();
-      const body = (p.selftext || '').toLowerCase();
-      const combined = title + ' ' + body;
-      if (BLOCKED_SUBREDDITS.some(s => sub.includes(s))) return false;
-      if (BLOCKED_KEYWORDS.some(k => combined.includes(k))) return false;
-      if (p.over_18) return false;
-      if ((p.score || 0) < 1) return false;
-      if (!isEnglish(p.title)) return false;
-      if (!title.includes(brand.name.toLowerCase())) return false;
-      return true;
-    }).slice(0, 10).map(c => ({
-      id: 'r_' + c.data.id,
-      type: 'reddit',
-      brand: brand.name,
-      color: brand.color,
-      title: c.data.title,
-      description: c.data.selftext ? c.data.selftext.substring(0, 140) : '',
-      source: 'r/' + c.data.subreddit,
-      url: 'https://reddit.com' + c.data.permalink,
-      ts: c.data.created_utc,
-      engagement: (c.data.ups || 0).toLocaleString() + ' pts',
-      sentiment: score(c.data.title + ' ' + c.data.selftext)
-    }));
+    if (!r.ok) throw new Error('Reddit RSS ' + r.status);
+    const xml = await r.text();
+    const items = xml.match(/<entry>[\s\S]*?<\/entry>/g) || [];
+    return items.filter(item => {
+      const title = (item.match(/<title[^>]*>([\s\S]*?)<\/title>/) || [])[1] || '';
+      const clean = title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/<!\[CDATA\[|\]\]>/g,'').toLowerCase();
+      return clean.includes(brand.name.toLowerCase());
+    }).slice(0, 10).map((item, i) => {
+      const title = ((item.match(/<title[^>]*>([\s\S]*?)<\/title>/) || [])[1] || '').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/<!\[CDATA\[|\]\]>/g,'').trim();
+      const link = ((item.match(/<link[^>]*href="([^"]*)"/) || [])[1] || '');
+      const published = ((item.match(/<published>([\s\S]*?)<\/published>/) || [])[1] || '');
+      const author = ((item.match(/<name>([\s\S]*?)<\/name>/) || [])[1] || 'Reddit');
+      const category = ((item.match(/<category[^>]*term="([^"]*)"/) || [])[1] || 'reddit');
+      const ts = published ? new Date(published).getTime() / 1000 : Date.now() / 1000;
+      return {
+        id: 'r_rss_' + i + '_' + ts,
+        type: 'reddit',
+        brand: brand.name,
+        color: brand.color,
+        title,
+        description: '',
+        source: 'r/' + category,
+        url: link,
+        ts,
+        engagement: 'Reddit',
+        sentiment: score(title)
+      };
+    });
   } catch(e) { console.error('Reddit ' + brand.name + ':', e.message); return []; }
 }
 
